@@ -2,8 +2,6 @@
 
 https://github.com/AFFASocial/PHP-SmartBlocker-1.0/blob/main/SB.png
 
-[![PHP SmartBlocker](https://github.com/AFFASocial/PHP-SmartBlocker-1.0/raw/main/SB.png)](https://github.com/AFFASocial/PHP-SmartBlocker-1.0/blob/main/SB.png)
-
 "Real users only"
 
 Just download the .zip unzip the files and click on the PHP_SmartBlocker_1.0_Installation_Guide.html and it should open in your browser follow the instructions and DONE. You can copy the code snippets directly from the installation guide during the installation.
