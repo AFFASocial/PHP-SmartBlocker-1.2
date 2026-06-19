@@ -8,7 +8,8 @@
  * 2. Whitelists legitimate search engine bots (Googlebot, DuckDuckBot etc.)
  * 3. Blocks known bad bots and scrapers by user agent string
  * 4. Blocks outdated Chrome versions used as bot fingerprints
- * 5. Drag-and-drop puzzle CAPTCHA via verify_overlay.php for all human visitors
+ * 5. Blocks WordPress probe paths (wp-login.php, wp-admin etc.) — site is not WordPress
+ * 6. Drag-and-drop puzzle CAPTCHA via verify_overlay.php for all human visitors
  *
  * Logs BLOCKED and CAPTCHA events to alist.txt — one line per entry.
  * Add to .htaccess: php_value auto_prepend_file /home/affasoci/public_html/blocks.php
@@ -95,8 +96,9 @@ if ($secretToken !== '' && ($_SERVER['HTTP_X_AUTOPOSTER_TOKEN'] ?? '') === $secr
 // ---------------------------------------------------------------
 // GET VISITOR IP — no Cloudflare, use REMOTE_ADDR directly
 // ---------------------------------------------------------------
-$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$visitorIp = $_SERVER['REMOTE_ADDR']     ?? '0.0.0.0';
+$userAgent   = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$visitorIp   = $_SERVER['REMOTE_ADDR']     ?? '0.0.0.0';
+$requestPath = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
 
 // ---------------------------------------------------------------
 // 1. BLOCK MISSING / EMPTY USER-AGENTS
@@ -171,14 +173,38 @@ if (preg_match('/Chrome\/(\d+)\./', $userAgent, $matches)) {
 }
 
 // ---------------------------------------------------------------
-// 5. DRAG-AND-DROP PUZZLE CAPTCHA — challenge ALL visitors on first visit
+// 5. BLOCK WORDPRESS PROBE PATHS — site is not WordPress
+//    Returns your custom 404 page. Using 404 (not 403) tells scanners
+//    the path simply doesn't exist, which discourages repeat probing.
+// ---------------------------------------------------------------
+$wpProbePaths = [
+    '/wp-login.php', '/wp-admin', '/wp-admin/', '/xmlrpc.php',
+    '/wp-config.php', '/wp-includes', '/wp-content',
+];
+
+foreach ($wpProbePaths as $probe) {
+    if ($requestPath === $probe || strpos($requestPath, $probe . '/') === 0) {
+        rotate_log($logFile);
+        writelog($logFile, 'BLOCKED', 'WP_PROBE:' . $requestPath, $visitorIp);
+        http_response_code(404);
+        $custom404 = '/home/affasoci/public_html/404.shtml';
+        if (file_exists($custom404)) {
+            readfile($custom404);
+        } else {
+            echo '<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>';
+        }
+        exit;
+    }
+}
+
+// ---------------------------------------------------------------
+// 6. DRAG-AND-DROP PUZZLE CAPTCHA — challenge ALL visitors on first visit
 //    Once solved, the session + cookie lets them through freely.
 //    Skip AJAX endpoints so background requests don't get interrupted.
 // ---------------------------------------------------------------
 $skipCaptcha = ['/includes/ajax/data/live.php', '/includes/ajax/chat/live.php'];
-$currentPath = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
 
-if (!already_verified($visitorIp) && !in_array($currentPath, $skipCaptcha, true)) {
+if (!already_verified($visitorIp) && !in_array($requestPath, $skipCaptcha, true)) {
     rotate_log($logFile);
     serve_captcha($logFile, 'CAPTCHA_ALL', $visitorIp);
 }
