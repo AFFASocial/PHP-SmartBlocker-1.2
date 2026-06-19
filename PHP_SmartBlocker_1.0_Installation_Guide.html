@@ -104,17 +104,23 @@ td:first-child{font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var
       <tr><td>2</td><td>Known good bots</td><td>Allow silently (Googlebot, Bingbot etc.)</td></tr>
       <tr><td>3</td><td>Known bad bot UAs</td><td>Hard 403 &mdash; curl, scrapy, selenium etc.</td></tr>
       <tr><td>4</td><td>Old Chrome (&lt;110)</td><td>Hard 403 &mdash; bot fingerprint</td></tr>
-      <tr><td>5</td><td>Puzzle CAPTCHA</td><td>Drag-and-drop challenge for all unverified visitors</td></tr>
+      <tr><td>5</td><td>WordPress probe paths</td><td>Hard 404 &mdash; wp-login.php, wp-admin, xmlrpc.php etc.</td></tr>
+      <tr><td>6</td><td>Jigsaw CAPTCHA</td><td>3-piece classic jigsaw puzzle &mdash; must place all pieces in correct slots in correct order</td></tr>
     </tbody>
   </table>
   <div class="box good">&#x2705; Once solved, a 24-hour cookie lets the visitor through freely. Bots can never solve the puzzle. Any spammer that gets through is a real human &mdash; not a bot.</div>
 
+  <h3>The Jigsaw CAPTCHA</h3>
+  <p>A randomly generated scene image is split into 5 columns across a board. Three pieces are removed and shown as draggable jigsaw pieces below, each with classic interlocking tabs and blanks on all four sides. Six visual themes are used &mdash; deep space city, neon ocean, volcanic dusk, aurora tundra, cyberpunk rain, and desert twilight &mdash; chosen randomly on every visit.</p>
+  <p>The visitor must drag all 3 pieces into their correct slots <strong>in the right order</strong> (piece 1 first, then 2, then 3). The correct slot positions and required placement order are stored server-side and never exposed in the HTML source. Wrong slot placements flash red without counting as a failed attempt. After 5 incorrect submissions the puzzle locks out for 60 seconds. Works on both desktop with mouse drag and mobile with touch drag.</p>
+  <div class="box info">&#x2139; The board gaps, tray pieces, and display numbers are all independently randomised on every visit &mdash; making pattern recognition and automated solving extremely difficult.</div>
+
   <h3>Visitor Experience</h3>
   <div class="flow">
-    <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><strong>First visit</strong> &mdash; Drag-and-drop puzzle appears. Takes about 5 seconds to solve.</div></div>
+    <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><strong>First visit</strong> &mdash; Jigsaw puzzle appears. Drag 3 pieces into their correct slots in the correct order. Takes about 10&ndash;15 seconds to solve.</div></div>
     <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>After solving</strong> &mdash; 24-hour cookie set. Visitor browses freely with no further interruption.</div></div>
     <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><strong>Next day</strong> &mdash; Cookie expires. Puzzle shows once more on first visit of the day.</div></div>
-    <div class="flow-step"><div class="flow-num">4</div><div class="flow-text"><strong>Wrong answer</strong> &mdash; puzzle resets with a new random theme and slot. They can try again immediately.</div></div>
+    <div class="flow-step"><div class="flow-num">4</div><div class="flow-text"><strong>Wrong placement</strong> &mdash; puzzle resets with a new random theme, new gap positions, and new piece order. After 5 wrong submissions a 60-second lockout applies.</div></div>
   </div>
 </section>
 
