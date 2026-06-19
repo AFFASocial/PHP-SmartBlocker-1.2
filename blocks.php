@@ -22,7 +22,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ---------------------------------------------------------------
-// LOGGING — only logs blocked/captcha events, not allowed traffic
+// LOGGING — helpers defined early, rotate_log called AFTER early returns
 // ---------------------------------------------------------------
 $logFile = '/home/affasoci/public_html/alist.txt';
 if (!is_writable($logFile) && !@touch($logFile)) {
@@ -39,7 +39,6 @@ function rotate_log(string $logFile): void {
         file_put_contents($logFile, implode(PHP_EOL, $trimmed) . PHP_EOL, LOCK_EX);
     }
 }
-rotate_log($logFile);
 
 function writelog(string $logFile, string $status, string $reason, string $ip): void {
     $date    = date('Y-m-d H:i:s');
@@ -58,7 +57,7 @@ function writelog(string $logFile, string $status, string $reason, string $ip): 
 
 // ---------------------------------------------------------------
 // HELPER — check if visitor already passed CAPTCHA
-// Accepts either session flag or cookie (mirrors verify_overlay.php logic)
+// Uses REMOTE_ADDR consistently — no proxy headers (not behind Cloudflare)
 // ---------------------------------------------------------------
 function already_verified(string $ip): bool {
     if (!empty($_SESSION['verified_human']) && ($_SESSION['verified_ip'] ?? '') === $ip) {
@@ -84,10 +83,12 @@ function serve_captcha(string $logFile, string $reason, string $ip): void {
 
 // ---------------------------------------------------------------
 // SECRET TOKEN BYPASS — for trusted automated tools e.g. autoposter
+// Load from environment variable to avoid hardcoding secrets in source.
+// Set on your server: SetEnv AUTOPOSTER_TOKEN your_secret_here  (in .htaccess or httpd.conf)
 // Autoposter sends header: X-Autoposter-Token: <token> to bypass all checks silently
 // ---------------------------------------------------------------
-$secretToken = 'G0(k]5xH,fUZ6y@^;lsOT~cizYA{^eWQgj15hDldHiVqsgkbJW';
-if (($_SERVER['HTTP_X_AUTOPOSTER_TOKEN'] ?? '') === $secretToken) {
+$secretToken = getenv('AUTOPOSTER_TOKEN') ?: '';
+if ($secretToken !== '' && ($_SERVER['HTTP_X_AUTOPOSTER_TOKEN'] ?? '') === $secretToken) {
     return; // Trusted request — skip everything silently
 }
 
@@ -122,7 +123,7 @@ $uaLower = strtolower($userAgent);
 
 foreach ($allowedBots as $good) {
     if (strpos($uaLower, $good) !== false) {
-        return;
+        return; // Good bot — exit early, no log rotation needed
     }
 }
 
@@ -145,6 +146,7 @@ $blockedAgents = [
 
 foreach ($blockedAgents as $agent) {
     if (strpos($uaLower, $agent) !== false) {
+        rotate_log($logFile);
         writelog($logFile, 'BLOCKED', 'BAD_UA:' . $agent, $visitorIp);
         http_response_code(403);
         echo '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1><p>Access Denied.</p></body></html>';
@@ -160,6 +162,7 @@ foreach ($blockedAgents as $agent) {
 if (preg_match('/Chrome\/(\d+)\./', $userAgent, $matches)) {
     $chromeMajor = (int) $matches[1];
     if ($chromeMajor < 110) {
+        rotate_log($logFile);
         writelog($logFile, 'BLOCKED', 'OLD_CHROME:' . $chromeMajor, $visitorIp);
         http_response_code(403);
         echo '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1><p>Access Denied.</p></body></html>';
@@ -176,5 +179,6 @@ $skipCaptcha = ['/includes/ajax/data/live.php', '/includes/ajax/chat/live.php'];
 $currentPath = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
 
 if (!already_verified($visitorIp) && !in_array($currentPath, $skipCaptcha, true)) {
+    rotate_log($logFile);
     serve_captcha($logFile, 'CAPTCHA_ALL', $visitorIp);
 }
