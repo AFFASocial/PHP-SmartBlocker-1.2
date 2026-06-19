@@ -22,9 +22,13 @@ PHP SmartBlocker runs as a PHP auto-prepend file, executing before every single 
 - Outdated Chrome versions below 110 used as bot fingerprints are hard blocked
 - Every other visitor is presented with a drag-and-drop puzzle CAPTCHA they must solve before accessing any page
 
-## The Puzzle CAPTCHA
+The Jigsaw CAPTCHA
 
-A randomly generated landscape image is split into three columns with one piece missing. Five different visual themes are used — night sky, ocean, forest, desert and mountain — chosen randomly on every visit. The visitor must drag the floating piece into the correct empty slot to proceed. The correct slot position is stored server-side and never exposed in the HTML source, making it impossible for automated tools to bypass without sophisticated computer vision. Works on both desktop with mouse drag and mobile with touch drag.
+A randomly generated scene image is split into 5 columns across a board. Three pieces are removed and shown as draggable jigsaw pieces below, each with classic interlocking tabs and blanks on all four sides. Six visual themes are used — deep space city, neon ocean, volcanic dusk, aurora tundra, cyberpunk rain, and desert twilight — chosen randomly on every visit.
+
+The visitor must drag all 3 pieces into their correct slots in the right order (piece 1 first, then 2, then 3). The correct slot positions and required placement order are stored server-side and never exposed in the HTML source. Wrong slot placements flash red without counting as a failed attempt. After 5 incorrect submissions the puzzle locks out for 60 seconds. Works on both desktop with mouse drag and mobile with touch drag.
+
+ℹ The board gaps, tray pieces, and display numbers are all independently randomised on every visit — making pattern recognition and automated solving extremely difficult.
 
 ## After Solving
 
