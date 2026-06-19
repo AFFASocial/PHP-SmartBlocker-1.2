@@ -244,7 +244,7 @@ p.subtitle{font-size:.82rem;color:rgba(255,255,255,.36);margin-bottom:22px;line-
 <div class="card">
     <div class="shield-wrap"><div class="ring"></div><div class="shield-icon">🛡️</div></div>
     <h1>Security Verification</h1>
-    <p class="subtitle">Place the pieces in order — drag piece <strong style="color:rgba(255,255,255,0.7)">1</strong> first, then <strong style="color:rgba(255,255,255,0.7)">2</strong>, then <strong style="color:rgba(255,255,255,0.7)">3</strong> — each into its matching numbered slot.</p>
+    <p class="subtitle">Drag all 3 pieces into their correct slots to continue — use the shape of each piece to find where it fits.</p>
 
     <?php if (!empty($error)): ?>
         <div class="error-msg">⚠️ <?= htmlspecialchars($error) ?></div>
