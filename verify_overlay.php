@@ -89,7 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['answers']) && empty($
             }
             $redirect = htmlspecialchars($_SESSION['blocked_uri'] ?? '/', ENT_QUOTES, 'UTF-8');
             unset($_SESSION['blocked_uri']);
-            header("Refresh: 0; url=" . $redirect);
+
+            // Meta refresh instead of Refresh header — mobile browsers (especially
+            // iOS Safari) sometimes follow the Refresh header before fully committing
+            // the cookie. A meta refresh tag forces the browser to parse the full
+            // response (and write the cookie) before navigating. Zero visible delay.
+            ?><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=<?= $redirect ?>">
+<title>Verified</title>
+</head>
+<body></body>
+</html>
+<?php
             exit;
         } else {
             $fail_count++;
