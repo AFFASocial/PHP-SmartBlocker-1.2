@@ -26,7 +26,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // LOGGING — helpers defined early, rotate_log called AFTER early returns
 // ---------------------------------------------------------------
 $logFile = '/home/affasoci/public_html/alist.txt';
-if (!is_writable($logFile) && !@touch($logFile)) {
+if (!is_writable(dirname($logFile)) && !@touch($logFile)) {
     $logFile = sys_get_temp_dir() . '/alist.txt';
 }
 
