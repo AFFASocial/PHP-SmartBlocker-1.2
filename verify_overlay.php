@@ -241,10 +241,10 @@ p.subtitle{font-size:.82rem;color:rgba(255,255,255,.36);margin-bottom:22px;line-
 
 @media(max-width:500px){
     .card{padding:22px 14px 20px}
-    .puzzle-board{height:100px}
-    .piece-canvas-wrap{width:56px;height:76px}
-    .dragging-ghost{width:56px;height:76px}
-    .piece-tray{gap:8px}
+    .puzzle-board{height:80px}
+    .piece-canvas-wrap{width:56px;height:80px}
+    .dragging-ghost{width:56px;height:80px}
+    .piece-tray{gap:6px}
 }
 </style>
 </head>
