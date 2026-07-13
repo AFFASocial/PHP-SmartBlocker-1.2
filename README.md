@@ -4,15 +4,60 @@
 
 # PHP SmartBlocker v1.1
 
-A self-hosted, zero-dependency bot blocker and CAPTCHA system for any PHP website. No external APIs, no third-party services, no ongoing cost. Runs entirely on your server using two PHP files.
+A self-hosted, zero-dependency bot protection and CAPTCHA system for any PHP website. No external APIs, no third-party services, no ongoing cost. Runs entirely on your server using two PHP files.
+
+PHP SmartBlocker sits in front of every page on your site and intercepts all incoming traffic before it reaches your application. Legitimate visitors pass through after a one-time puzzle challenge. Everything else is stopped at the door.
+
+All checks run in PHP memory with no database queries or external calls, making the overhead negligible even on shared hosting.
+
+---
+
+## What It Protects Against
+
+**Bot and scraper traffic**
+Blocks known commercial crawlers, SEO tools, and content scrapers including DotBot, AhrefsBot, SemrushBot, YandexBot, BaiduSpider, ByteSpider, PetalBot, Sogou, MJ12Bot, and dozens more. These tools harvest your content to build commercial products and databases without your consent.
+
+**AI training crawlers**
+Blocks AI training bots including GPTBot (OpenAI), ClaudeBot (Anthropic), Meta-ExternalAgent (Meta), ByteSpider (ByteDance), and PerplexityBot that scrape your content to train or power commercial AI products — without your permission or compensation.
+
+**Content theft and unauthorised harvesting**
+Prevents your posts, member profiles, images, and data from being scraped and republished or sold elsewhere. All visitor traffic must clear the CAPTCHA challenge before any page content is served.
+
+**Fake and bot-generated analytics traffic**
+Because bots are stopped before they reach your pages, they cannot inflate your Google Analytics visit counts, distort your traffic reports, or skew your engagement metrics. Your analytics reflect real human visitors only.
+
+**Automated spam registration attempts**
+Blocks scripted tools and bot farms that attempt to flood your registration forms with fake accounts for spam, SEO link building, or account resale. Bots cannot solve the jigsaw puzzle required to proceed.
+
+**WordPress credential attacks and path probing**
+Blocks automated scanners probing for WordPress vulnerabilities — `/wp-login.php`, `/wp-admin`, `/xmlrpc.php`, `/wp-config.php` — even on non-WordPress sites. Returns a 404 to discourage repeat attempts.
+
+**Server credential harvesting**
+Blocks automated probes targeting sensitive server files including `.env`, `.aws/credentials`, configuration files, and other paths commonly targeted by reconnaissance scripts.
+
+**SQL injection and exploit attempts**
+Catches requests containing malicious URL parameters and exploit strings before they reach your application or database.
+
+**Outdated browser fingerprints used by bot farms**
+No real user runs Chrome 51 or Chrome 89 in 2026. Scrapers and bot farms fake old Chrome versions to appear human. SmartBlocker blocks any Chrome version below 110 with a hard 403.
+
+**Headless browser automation tools**
+Blocks tools commonly used for automated scraping and form abuse including Selenium, Puppeteer, Playwright, PhantomJS, and HeadlessChrome.
+
+**Volumetric traffic bursts**
+The CAPTCHA wall means burst traffic from coordinated IP clusters hits a lightweight puzzle page rather than your application and database, protecting your server resources and uptime.
+
+**Empty and missing user agents**
+Any request with no user agent is blocked immediately with a 403. Legitimate browsers always send a user agent string.
+
+**What passes through**
+Legitimate search engine crawlers including Googlebot, Bingbot, DuckDuckBot, FacebookExternalHit, Twitterbot, LinkedInBot, and AppleBot are whitelisted and pass through silently without ever seeing the CAPTCHA, so your search rankings are never affected.
+
+Real human visitors solve the jigsaw puzzle once per 24 hours, then browse freely for the rest of the day with no further interruption.
 
 ---
 
 ## What It Does
-
-PHP SmartBlocker sits in front of every page on your site and runs a layered series of checks before any request reaches your application. Legitimate visitors pass through automatically after a one-time puzzle verification. Bots, scrapers, and bad actors are blocked silently.
-
-All checks run in PHP memory with no database queries or external calls, making the overhead negligible even on shared hosting.
 
 ---
 
