@@ -145,7 +145,7 @@ $blockedAgents = [
     'bot', 'crawler', 'spider', 'scraper', 'fetcher', 'harvest',
     'scan', 'exploit', 'inject', 'attack',
     // Passkey probing and authentication reconnaissance
-    'passkey-domain-check', 'authenticationservicescore',
+    'passkey-domain-check',
 ];
 
 foreach ($blockedAgents as $agent) {
