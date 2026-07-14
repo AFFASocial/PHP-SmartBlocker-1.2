@@ -12,7 +12,7 @@
  * 6. Drag-and-drop puzzle CAPTCHA via verify_overlay.php for all human visitors
  *
  * Logs BLOCKED and CAPTCHA events to alist.txt — one line per entry.
- * Add to .htaccess: php_value auto_prepend_file /home/yourusername/public_html/blocks.php
+ * Add to .htaccess: php_value auto_prepend_file /home/affasoci/public_html/blocks.php
  */
 
 // ---------------------------------------------------------------
@@ -25,7 +25,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // ---------------------------------------------------------------
 // LOGGING — helpers defined early, rotate_log called AFTER early returns
 // ---------------------------------------------------------------
-$logFile = '/home/yourusername/public_html/alist.txt';
+$logFile = '/home/affasoci/public_html/alist.txt';
 if (!is_writable(dirname($logFile)) && !@touch($logFile)) {
     $logFile = sys_get_temp_dir() . '/alist.txt';
 }
@@ -57,8 +57,94 @@ function writelog(string $logFile, string $status, string $reason, string $ip): 
 }
 
 // ---------------------------------------------------------------
+// HELPER — Cloudflare-aware real IP resolution
+// Works whether or not the site is actually behind Cloudflare:
+//   - If the direct connection (REMOTE_ADDR) comes from a known
+//     Cloudflare IP range, trust CF-Connecting-IP for the real visitor IP.
+//   - Otherwise, REMOTE_ADDR is used as-is and CF headers are ignored,
+//     so they can't be spoofed by a random visitor to fake an IP.
+// Cloudflare IP ranges: https://www.cloudflare.com/ips/
+// ---------------------------------------------------------------
+const CLOUDFLARE_IPV4_RANGES = [
+    '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+    '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+    '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+    '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+];
+
+const CLOUDFLARE_IPV6_RANGES = [
+    '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+    '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32',
+];
+
+function ipv4InRange(string $ip, string $cidr): bool {
+    [$subnet, $bits] = explode('/', $cidr);
+    $ipLong     = ip2long($ip);
+    $subnetLong = ip2long($subnet);
+    if ($ipLong === false || $subnetLong === false) {
+        return false;
+    }
+    $mask = -1 << (32 - (int) $bits);
+    return ($ipLong & $mask) === ($subnetLong & $mask);
+}
+
+function ipv6InRange(string $ip, string $cidr): bool {
+    [$subnet, $bits] = explode('/', $cidr);
+    $ipBin     = @inet_pton($ip);
+    $subnetBin = @inet_pton($subnet);
+    if ($ipBin === false || $subnetBin === false) {
+        return false;
+    }
+    $bits      = (int) $bits;
+    $bytes     = intdiv($bits, 8);
+    $remainder = $bits % 8;
+
+    if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+        return false;
+    }
+    if ($remainder === 0) {
+        return true;
+    }
+    $mask = ~(0xFF >> $remainder) & 0xFF;
+    return (ord($ipBin[$bytes]) & $mask) === (ord($subnetBin[$bytes]) & $mask);
+}
+
+function isCloudflareIp(string $ip): bool {
+    if (strpos($ip, ':') !== false) {
+        foreach (CLOUDFLARE_IPV6_RANGES as $range) {
+            if (ipv6InRange($ip, $range)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    foreach (CLOUDFLARE_IPV4_RANGES as $range) {
+        if (ipv4InRange($ip, $range)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getRealIp(): string {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    // Only trust CF-Connecting-IP if the direct connection is actually
+    // from Cloudflare. If the site isn't behind Cloudflare, this never
+    // matches, so REMOTE_ADDR is always used — nothing changes for you.
+    if (isCloudflareIp($remoteAddr) && !empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $cfIp = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+        if (filter_var($cfIp, FILTER_VALIDATE_IP)) {
+            return $cfIp;
+        }
+    }
+
+    return $remoteAddr;
+}
+
+// ---------------------------------------------------------------
 // HELPER — check if visitor already passed CAPTCHA
-// Uses REMOTE_ADDR consistently — no proxy headers (not behind Cloudflare)
+// Uses the resolved real IP consistently (Cloudflare-aware, see getRealIp())
 // ---------------------------------------------------------------
 function already_verified(string $ip): bool {
     if (!empty($_SESSION['verified_human']) && ($_SESSION['verified_ip'] ?? '') === $ip) {
@@ -94,10 +180,11 @@ if ($secretToken !== '' && ($_SERVER['HTTP_X_AUTOPOSTER_TOKEN'] ?? '') === $secr
 }
 
 // ---------------------------------------------------------------
-// GET VISITOR IP — no Cloudflare, use REMOTE_ADDR directly
+// GET VISITOR IP — Cloudflare-aware (falls back to REMOTE_ADDR if
+// the request isn't actually coming through Cloudflare)
 // ---------------------------------------------------------------
 $userAgent   = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$visitorIp   = $_SERVER['REMOTE_ADDR']     ?? '0.0.0.0';
+$visitorIp   = getRealIp();
 $requestPath = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
 
 // ---------------------------------------------------------------
@@ -190,7 +277,7 @@ foreach ($wpProbePaths as $probe) {
         rotate_log($logFile);
         writelog($logFile, 'BLOCKED', 'WP_PROBE:' . $requestPath, $visitorIp);
         http_response_code(404);
-        $custom404 = '/home/yourusername/public_html/404.shtml';
+        $custom404 = '/home/affasoci/public_html/404.shtml';
         if (file_exists($custom404)) {
             readfile($custom404);
         } else {
