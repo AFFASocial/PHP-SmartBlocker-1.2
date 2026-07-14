@@ -1,8 +1,8 @@
-# PHP SmartBlocker 1.1
+# PHP SmartBlocker 1.2
 
 [![PHP SmartBlocker](https://github.com/AFFASocial/PHP-SmartBlocker-1.0/raw/main/SB.png)](https://github.com/AFFASocial/PHP-SmartBlocker-1.0/blob/main/SB.png)
 
-# PHP SmartBlocker v1.1
+# PHP SmartBlocker v1.2
 
 A self-hosted, zero-dependency bot protection and CAPTCHA system for any PHP website. No external APIs, no third-party services, no ongoing cost. Runs entirely on your server using two PHP files.
 
@@ -127,7 +127,7 @@ On successful completion two cookies are set:
 - `human_ticket` — HttpOnly, used for server-side session matching
 - `human_ticket_mobile` — accessible to JavaScript, for mobile compatibility
 
-Both expire after 24 hours. The server session also stores `verified_human = true` and the visitor's IP for cross-reference.
+Both expire after 24 hours. The server session also stores `verified_human = true` and the visitor's real IP (Cloudflare-aware, see below) for cross-reference.
 
 ---
 
@@ -294,6 +294,7 @@ The CAPTCHA verification cookie expires after 24 hours. To change this, find bot
 - No Composer, no npm, no build step
 - Compatible with any PHP framework or CMS (WordPress, Laravel, Sngine, custom PHP etc.)
 - Mobile browsers fully supported via touch drag
+- Works automatically whether or not the site is behind Cloudflare — no configuration needed
 
 ---
 
@@ -302,7 +303,7 @@ The CAPTCHA verification cookie expires after 24 hours. To change this, find bot
 - The correct puzzle slot positions and placement order are stored in `$_SESSION` server-side and are never sent to the browser
 - The CAPTCHA form includes a CSRF token validated with `hash_equals()` on every POST
 - The autoposter secret token is loaded from a server environment variable — never hardcoded
-- IP source uses `REMOTE_ADDR` only — no spoofable proxy headers unless you are behind a trusted reverse proxy
+- IP resolution is Cloudflare-aware: `getRealIp()` only trusts the `CF-Connecting-IP` header when the direct connection is verified against Cloudflare's published IP ranges, otherwise it uses `REMOTE_ADDR` directly. This means the header can't be spoofed by a visitor who isn't actually coming through Cloudflare, and no configuration is needed whether or not you use Cloudflare.
 - The log file path should ideally be outside the web root to prevent direct browser access. If you must keep it in the web root, add this to `.htaccess` to block direct access:
 
 ```apache
@@ -347,15 +348,20 @@ The puzzle requires matching jigsaw piece shapes spatially across a randomised s
 No — the puzzle is rendered with HTML5 Canvas and requires JavaScript for drag-and-drop. Visitors with JavaScript disabled will see a non-functional puzzle. This is by design — the vast majority of bots do not execute JavaScript at all.
 
 **Can I use this behind Cloudflare?**
-Yes, but you should update `overlay_get_ip()` in `verify_overlay.php` to trust the `CF-Connecting-IP` header instead of `REMOTE_ADDR`, otherwise all visitors will appear to share Cloudflare's IP.
+Yes, and no configuration is required either way. `blocks.php` resolves the visitor's real IP itself via `getRealIp()`: if the direct connection to your server is verified as coming from a genuine Cloudflare IP range, it trusts the `CF-Connecting-IP` header for the true visitor address; otherwise it uses `REMOTE_ADDR` exactly as before. `verify_overlay.php` reuses the same function, so the CAPTCHA session/cookie IP always matches what `blocks.php` checks on the next request — with or without Cloudflare in front of your site.
 
 ---
 
 ## Changelog
 
+### v1.2
+- Added Cloudflare-aware IP resolution (`getRealIp()` in `blocks.php`): trusts `CF-Connecting-IP` only when the direct connection is verified against Cloudflare's published IP ranges, otherwise falls back to `REMOTE_ADDR` unchanged — no configuration required either way
+- `verify_overlay.php`'s `overlay_get_ip()` now calls the same `getRealIp()` from `blocks.php` instead of reading `REMOTE_ADDR` on its own, keeping the CAPTCHA session IP consistent with what `blocks.php` checks — fixes a mismatch that would otherwise cause the puzzle to reappear on every page load for sites behind Cloudflare
+- Supersedes the v1.1 "IP source unified" change below, which made IP resolution `REMOTE_ADDR`-only everywhere; v1.2 keeps both files in sync while adding Cloudflare support
+
 ### v1.1
 - Secret token moved from hardcoded source to server environment variable (`AUTOPOSTER_TOKEN`)
-- IP source unified to `REMOTE_ADDR` across both files — eliminates session mismatch from spoofable proxy headers
+- IP source unified to `REMOTE_ADDR` across both files — eliminates session mismatch from spoofable proxy headers *(superseded in v1.2, see above)*
 - `rotate_log()` moved to fire only on block/CAPTCHA events, not on every request
 - CSRF token added to CAPTCHA form, validated server-side with `hash_equals()`
 - Wrong-answer rate limiting — 5 failures triggers 60-second lockout
