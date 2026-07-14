@@ -144,6 +144,8 @@ $blockedAgents = [
     'nmap', 'nikto', 'sqlmap', 'dirbuster', 'nuclei',
     'bot', 'crawler', 'spider', 'scraper', 'fetcher', 'harvest',
     'scan', 'exploit', 'inject', 'attack',
+    // Passkey probing and authentication reconnaissance
+    'passkey-domain-check', 'authenticationservicescore',
 ];
 
 foreach ($blockedAgents as $agent) {
@@ -180,6 +182,7 @@ if (preg_match('/Chrome\/(\d+)\./', $userAgent, $matches)) {
 $wpProbePaths = [
     '/wp-login.php', '/wp-admin', '/wp-admin/', '/xmlrpc.php',
     '/wp-config.php', '/wp-includes', '/wp-content',
+    '/.well-known/passkey-endpoints', '/.well-known/passkey-domain-check',
 ];
 
 foreach ($wpProbePaths as $probe) {
