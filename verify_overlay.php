@@ -7,7 +7,12 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 $error = '';
 
-function overlay_get_ip(): string { return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'; }
+// Reuses getRealIp() from blocks.php (already defined — this file is require()'d
+// from inside blocks.php, so the function exists in scope). Falls back to
+// REMOTE_ADDR only if this file is ever somehow loaded standalone.
+function overlay_get_ip(): string {
+    return function_exists('getRealIp') ? getRealIp() : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
 $visitor_ip = overlay_get_ip();
 
 // ── Rate limiting ────────────────────────────────────────────────
