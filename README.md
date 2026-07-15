@@ -57,10 +57,6 @@ Real human visitors solve the jigsaw puzzle once per 24 hours, then browse freel
 
 ---
 
-## What It Does
-
----
-
 ## How It Works — Layer by Layer
 
 ### Secret Token Bypass
@@ -70,7 +66,7 @@ Trusted automated tools (such as an autoposter) can bypass all checks by sending
 Requests with a missing or empty User-Agent header receive an immediate `403 Forbidden` response. Bots that send no UA cannot solve a CAPTCHA anyway, so no challenge is served — they are simply denied.
 
 ### Layer 2 — Good Bot Whitelist
-Legitimate search engine crawlers are identified by their User-Agent string and passed through silently without logging. Whitelisted bots include Googlebot, Google Inspection Tool, AdSbot, Bingbot, DuckDuckBot, Facebot, FacebookExternalHit, Twitterbot, LinkedInBot, AppleBot, and Slurp.
+Legitimate search engine crawlers and trusted performance testing tools are identified by their User-Agent string and passed through silently without logging. Whitelisted bots include Googlebot, Google Inspection Tool, AdSbot, Bingbot, DuckDuckBot, Facebot, FacebookExternalHit, Twitterbot, LinkedInBot, AppleBot, Slurp, and GTmetrix.
 
 ### Layer 3 — Bad Bot and Scraper Block
 A curated list of known bad User-Agent strings is checked. Any match receives an immediate `403 Forbidden` response and is logged. This covers a wide range of tools including curl, wget, Python, Java, Ruby, Perl, Go HTTP, Scrapy, Selenium, Puppeteer, Playwright, PhantomJS, HeadlessChrome, AhrefsBot, SemrushBot, DotBot, MJ12Bot, YandexBot, BaiduSpider, ByteSpider, PetalBot, Sogou, Masscan, Nikto, SQLMap, and many more.
