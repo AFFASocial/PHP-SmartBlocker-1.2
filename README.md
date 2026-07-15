@@ -59,7 +59,7 @@ Real human visitors solve the jigsaw puzzle once per 24 hours, then browse freel
 
 ## How It Works — Layer by Layer
 
-### Secret Token Bypass
+### Secret Token Bypass ( Only applies if you are using my Sngine Python/Anaconda Autoposter ) otherwise just ignore this as I have not shared the autoposter yet.
 Trusted automated tools (such as an autoposter) can bypass all checks by sending a custom HTTP header containing a secret token. The token is loaded from a server environment variable — never hardcoded in source. Any request that presents the correct token is passed through silently without logging.
 
 ### Layer 1 — Empty User Agent Block
