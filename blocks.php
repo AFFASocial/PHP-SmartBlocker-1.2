@@ -12,7 +12,7 @@
  * 6. Drag-and-drop puzzle CAPTCHA via verify_overlay.php for all human visitors
  *
  * Logs BLOCKED and CAPTCHA events to alist.txt — one line per entry.
- * Add to .htaccess: php_value auto_prepend_file /home/affasoci/public_html/blocks.php
+ * Add to .htaccess: php_value auto_prepend_file /home/yourusername/public_html/blocks.php
  */
 
 // ---------------------------------------------------------------
@@ -25,7 +25,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // ---------------------------------------------------------------
 // LOGGING — helpers defined early, rotate_log called AFTER early returns
 // ---------------------------------------------------------------
-$logFile = '/home/affasoci/public_html/alist.txt';
+$logFile = '/home/yourusername/public_html/alist.txt';
 if (!is_writable(dirname($logFile)) && !@touch($logFile)) {
     $logFile = sys_get_temp_dir() . '/alist.txt';
 }
@@ -205,7 +205,7 @@ if (trim($userAgent) === '') {
 $allowedBots = [
     'googlebot', 'google-inspectiontool', 'adsbot-google', 'mediapartners-google',
     'bingbot', 'slurp', 'duckduckbot', 'facebot', 'facebookexternalhit',
-    'twitterbot', 'linkedinbot', 'applebot',
+    'twitterbot', 'linkedinbot', 'applebot', 'gtmetrix',
 ];
 
 $uaLower = strtolower($userAgent);
@@ -233,6 +233,8 @@ $blockedAgents = [
     'scan', 'exploit', 'inject', 'attack',
     // Passkey probing and authentication reconnaissance
     'passkey-domain-check',
+    // CMS/WordPress fingerprinting tool
+    'cms-detector',
 ];
 
 foreach ($blockedAgents as $agent) {
@@ -277,7 +279,7 @@ foreach ($wpProbePaths as $probe) {
         rotate_log($logFile);
         writelog($logFile, 'BLOCKED', 'WP_PROBE:' . $requestPath, $visitorIp);
         http_response_code(404);
-        $custom404 = '/home/affasoci/public_html/404.shtml';
+        $custom404 = '/home/yourusername/public_html/404.shtml';
         if (file_exists($custom404)) {
             readfile($custom404);
         } else {
