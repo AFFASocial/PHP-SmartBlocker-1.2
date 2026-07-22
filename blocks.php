@@ -16,13 +16,6 @@
  */
 
 // ---------------------------------------------------------------
-// SESSION — must be started before any CAPTCHA checks
-// ---------------------------------------------------------------
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// ---------------------------------------------------------------
 // LOGGING — helpers defined early, rotate_log called AFTER early returns
 // ---------------------------------------------------------------
 $logFile = '/home/yourusername/public_html/alist.txt';
@@ -31,14 +24,43 @@ if (!is_writable(dirname($logFile)) && !@touch($logFile)) {
 }
 
 function rotate_log(string $logFile): void {
-    if (!file_exists($logFile) || filesize($logFile) < 1048576) {
+    if (!file_exists($logFile)) {
+        return;
+    }
+    $size = filesize($logFile);
+    if ($size === false || $size < 1048576) {
         return; // Under 1MB — nothing to do
     }
-    $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (count($lines) > 5000) {
-        $trimmed = array_slice($lines, -5000); // Keep last 5000 lines
-        file_put_contents($logFile, implode(PHP_EOL, $trimmed) . PHP_EOL, LOCK_EX);
+
+    // Read only a bounded chunk from the end of the file (~1.5MB, enough
+    // for well over 5000 typical log lines) instead of loading the
+    // entire file into memory with file(). Keeps rotation cheap even
+    // if the log has grown large during a traffic burst.
+    $handle = @fopen($logFile, 'rb');
+    if ($handle === false) {
+        return;
     }
+    $readSize = (int) min($size, 1572864); // 1.5MB
+    fseek($handle, -$readSize, SEEK_END);
+    $chunk = fread($handle, $readSize);
+    fclose($handle);
+
+    if ($chunk === false) {
+        return;
+    }
+
+    $lines = explode(PHP_EOL, rtrim($chunk, PHP_EOL));
+    // The chunk likely starts mid-line (we seeked from an arbitrary byte
+    // offset) — drop that first, possibly-truncated line.
+    if ($size > $readSize && count($lines) > 1) {
+        array_shift($lines);
+    }
+
+    if (count($lines) > 5000) {
+        $lines = array_slice($lines, -5000); // Keep last 5000 lines
+    }
+
+    file_put_contents($logFile, implode(PHP_EOL, $lines) . PHP_EOL, LOCK_EX);
 }
 
 function writelog(string $logFile, string $status, string $reason, string $ip): void {
@@ -192,6 +214,7 @@ $requestPath = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
 //    Hard 403 — bots with no UA can't solve a CAPTCHA anyway
 // ---------------------------------------------------------------
 if (trim($userAgent) === '') {
+    rotate_log($logFile);
     writelog($logFile, 'BLOCKED', 'EMPTY_UA', $visitorIp);
     http_response_code(403);
     echo '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1><p>Access Denied.</p></body></html>';
@@ -293,7 +316,16 @@ foreach ($wpProbePaths as $probe) {
 // 6. DRAG-AND-DROP PUZZLE CAPTCHA — challenge ALL visitors on first visit
 //    Once solved, the session + cookie lets them through freely.
 //    Skip AJAX endpoints so background requests don't get interrupted.
+//
+//    SESSION — started here rather than at the top of the file, so
+//    bots blocked in sections 1-5 never create an unnecessary PHP
+//    session file. Safe: no output has been sent yet at this point
+//    for any request that reaches this line.
 // ---------------------------------------------------------------
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $skipCaptcha = ['/includes/ajax/data/live.php', '/includes/ajax/chat/live.php'];
 
 if (!already_verified($visitorIp) && !in_array($requestPath, $skipCaptcha, true)) {
