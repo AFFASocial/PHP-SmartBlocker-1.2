@@ -227,7 +227,7 @@ if (trim($userAgent) === '') {
 // ---------------------------------------------------------------
 $allowedBots = [
     'googlebot', 'google-inspectiontool', 'adsbot-google', 'mediapartners-google',
-    'bingbot', 'slurp', 'duckduckbot', 'facebot', 'facebookexternalhit',
+    'googleother', 'bingbot', 'slurp', 'duckduckbot', 'facebot', 'facebookexternalhit',
     'twitterbot', 'linkedinbot', 'applebot', 'gtmetrix',
 ];
 
